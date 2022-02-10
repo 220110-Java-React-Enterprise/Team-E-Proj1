@@ -1,0 +1,8 @@
+2022-02-09 23:19:46 - Couldn't connect to database
+2022-02-09 23:32:16 - Couldn't connect to database
+2022-02-09 23:32:16 - null
+	Repository.Scriptor.DeleteStatement(Scriptor.java:230)
+	Repository.mainfile.main(mainfile.java:9)
+
+2022-02-09 23:33:19 - Couldn't connect to database
+2022-02-09 23:33:19 - test

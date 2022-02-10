@@ -20,23 +20,28 @@ public class Scriptor {
         connection = ConnectionManager.getConnection(connectionString);
     }
 
-
+    //reads all the rows of a specific table
     public static ArrayList<ArrayList<Object>> readTable(Object test) {
         ArrayList<ArrayList<Object>> allData = new ArrayList<>();
         ArrayList<Object> rowAllData = new ArrayList<Object>();
 
-        String tName = "";
+        String tName = ""; // holds the table name
         try {
+            //gets the table name
             for (PropertyDescriptor propertyDescriptor :
                     Introspector.getBeanInfo(test.getClass(), Object.class).getPropertyDescriptors()) {
                 if (propertyDescriptor.getReadMethod().toString().contains("TableName")) {
                     tName = (propertyDescriptor.getReadMethod().invoke(test).toString());
                 }
             }
+
+            //gets all the information from the table
             String selectStatement = "SELECT * FROM " + tName;
             PreparedStatement pstmt = connection.prepareStatement(selectStatement);
             ResultSet rs = pstmt.executeQuery();
             Integer numColumns = test.getClass().getDeclaredFields().length - 1;
+
+            //places all the rows into an arraylist
             while (rs.next()) {
                 rowAllData = new ArrayList<>();
                 for (int i = 0; i < numColumns; i++) {
@@ -54,20 +59,26 @@ public class Scriptor {
         }
         return allData;
     }
+
+    //overloaded function that prints table where a certain column equals something(Both are passed in)
     public static ArrayList<ArrayList<Object>> readTable(Object test, String columnAndID) {
         ArrayList<ArrayList<Object>> allData = new ArrayList<>();
         ArrayList<Object> rowAllData = new ArrayList<Object>();
-        String tName = "";
+        String tName = ""; // holds table name
         String[] options = columnAndID.split("=");
-        String columnName = options[options.length-2];
-        String IDName = options[options.length - 1];
+        String columnName = options[options.length-2]; //gets the column name
+        String IDName = options[options.length - 1]; //gets the ID
         try {
+
+            //gets the table name
             for (PropertyDescriptor propertyDescriptor :
                     Introspector.getBeanInfo(test.getClass(), Object.class).getPropertyDescriptors()) {
                 if (propertyDescriptor.getReadMethod().toString().contains("TableName")) {
                     tName = (propertyDescriptor.getReadMethod().invoke(test).toString());
                 }
             }
+
+            //gets rows from table where the column equals what was inserted
             String selectStatement = "SELECT * FROM " + tName + " WHERE " + columnName + " = ?";
             PreparedStatement pstmt = connection.prepareStatement(selectStatement);
             pstmt.setObject(1, IDName);
@@ -90,10 +101,12 @@ public class Scriptor {
         return allData;
     }
 
-        public static void updateTable(Object test) {
+    //either updates a row or inserts a new one based on the id
+    public static void updateTable(Object test) {
         String tName = "";
         int tPrimaryKey = -1;
 
+        //gets table name and the id of the object inserted
         try {
             for (PropertyDescriptor propertyDescriptor :
                     Introspector.getBeanInfo(test.getClass(), Object.class).getPropertyDescriptors()) {
@@ -109,8 +122,10 @@ public class Scriptor {
         } catch (IntrospectionException | InvocationTargetException | IllegalAccessException e) {
             FileLogger.getFileLogger().log(e);
         }
-            int testID = -1;
+        int testID = -1;
         GetType dataType = new GetType();
+
+        //creates array of all the fields in the object
         Field[] fields = test.getClass().getDeclaredFields();
         String readStatement = "Select * FROM " + tName;
         String fromWhere = " Where " + tName + "_id = ?";
@@ -120,28 +135,30 @@ public class Scriptor {
         String updateWhere;
         String insertWhere;
         String columnNames = "";
-        String[] typeArr = new String[200];
-        Class[] javaTypeArr = new Class[200];
+        String[] typeArr = new String[200]; //gets the sql type of the variable
+        Class[] javaTypeArr = new Class[200];//gets the java type of the variable
 
         for (int i = 2; i < fields.length; i++) {
             String temp = fields[i].getName();
             javaTypeArr[i - 2] = fields[i].getType();
             typeArr[i - 2] = dataType.decideJDBCType(fields[i].getType().toString());
 
+            //adds this to string unless it is at the end
             if (i != fields.length - 1) {
                 updateStatement += temp + "= ?, ";
                 insertStatement += temp + ", ";
                 questionString += "?,";
                 columnNames += " " + temp;
 
+                //if at end adds these without commas and with closed bracket
             } else {
                 updateStatement += temp + "= ?";
                 insertStatement += temp + ") ";
                 questionString += "?)";
             }
         }
-        updateWhere = updateStatement + fromWhere;
-        insertWhere = insertStatement + "VALUES (" + questionString;
+        updateWhere = updateStatement + fromWhere; // creates update where string
+        insertWhere = insertStatement + "VALUES (" + questionString; // creates insert where string
         PreparedStatement pstmt = null;
         String checkIfExists = readStatement + fromWhere;
         try {
@@ -151,7 +168,8 @@ public class Scriptor {
             while (rs.next()) {
                 testID = rs.getInt(1);
             }
-            System.out.println(testID);
+
+            //checks if the id entered already exists, if it doesn't then creates new row
             if (testID == -1) {
                 pstmt = connection.prepareStatement(insertWhere);
                 for (int i = 2; i < fields.length; i++) {
@@ -163,6 +181,8 @@ public class Scriptor {
                     }
                 }
                 pstmt.executeUpdate();
+
+                //if the id did exist then it updates that row
             } else {
                 pstmt = connection.prepareStatement(updateWhere);
                 for (int i = 1; i < fields.length; i++) {
@@ -184,12 +204,15 @@ public class Scriptor {
         }
     }
 
+    //deletes a row given an id
     public static void DeleteStatement(Object test) {
         PreparedStatement pstmt = null;
         String tName = "";
         Field[] fields = test.getClass().getDeclaredFields();
 
         try {
+
+            //gets the table name
             for (PropertyDescriptor propertyDescriptor :
                     Introspector.getBeanInfo(test.getClass(), Object.class).getPropertyDescriptors()) {
                 if (propertyDescriptor.getReadMethod().toString().contains("TableName")) {
@@ -198,11 +221,13 @@ public class Scriptor {
             }
             String deleteStatement = "Delete FROM " + tName + " Where " + tName + "_id = ?";
             pstmt = connection.prepareStatement(deleteStatement);
+
+            //gets the primary key of the object then deletes that row
             for (PropertyDescriptor propertyDescriptor :
                     Introspector.getBeanInfo(test.getClass(), Object.class).getPropertyDescriptors()) {
-                    if (propertyDescriptor.getName().contains("_id")) {
-                        pstmt.setInt(1, (Integer) propertyDescriptor.getReadMethod().invoke(test));
-                    }
+                if (propertyDescriptor.getName().contains("_id")) {
+                    pstmt.setInt(1, (Integer) propertyDescriptor.getReadMethod().invoke(test));
+                }
             }
             pstmt.executeUpdate();
 
@@ -211,9 +236,12 @@ public class Scriptor {
         }
     }
 
+    //builds a new table based on object
     public static String BuildStatement(Object test) {
         String tName = "";
         try {
+
+            //gets table name
             for (PropertyDescriptor propertyDescriptor :
                     Introspector.getBeanInfo(test.getClass(), Object.class).getPropertyDescriptors()) {
                 if (propertyDescriptor.getReadMethod().toString().contains("TableName")){
@@ -225,39 +253,43 @@ public class Scriptor {
         } catch (InvocationTargetException | IllegalAccessException e) {
             FileLogger.getFileLogger().log(e);
         }
-            String finalCreateString = "CREATE TABLE IF NOT EXISTS " + tName + " ( ";
+        String finalCreateString = "CREATE TABLE IF NOT EXISTS " + tName + " ( ";
         Field[] fields = test.getClass().getDeclaredFields();
         for (int i = 1; i < fields.length; i++) {
             String temp = fields[i].getName();
             String type = (fields[i].getType().toString());
+
+            //sets the primary key
             if(i == 1) {
                 finalCreateString += tName + "_id " + type + " auto_increment not null, ";
             }
-                else if(type.contains("String")){
-                    finalCreateString += temp + " Varchar(200), ";
-                }
-                else if(type.contains("int")){
-                    finalCreateString += temp + " int, ";
-                }
-                else if(type.contains("bool")){
-                    finalCreateString += temp + " boolean, ";
-                }
-                else if(type.contains("char")){
-                    finalCreateString += temp + " VARCHAR(200), ";
-                }
-                else if(type.contains("float")){
-                    finalCreateString += temp + " float, ";
-                }
 
+            //checks to see the java type and changes it to SQL type
+            else if(type.contains("String")){
+                finalCreateString += temp + " Varchar(200), ";
             }
+            else if(type.contains("int")){
+                finalCreateString += temp + " int, ";
+            }
+            else if(type.contains("bool")){
+                finalCreateString += temp + " boolean, ";
+            }
+            else if(type.contains("char")){
+                finalCreateString += temp + " VARCHAR(200), ";
+            }
+            else if(type.contains("float")){
+                finalCreateString += temp + " float, ";
+            }
+
+        }
+        //adds the primary key constraint
         finalCreateString += "Constraint " + tName + "_id_pk PRIMARY KEY (" + tName + "_id));" ;
         try {
             PreparedStatement pstmt = connection.prepareStatement(finalCreateString);
-           pstmt.executeUpdate();
+            pstmt.executeUpdate();
         } catch (SQLException e) {
             FileLogger.getFileLogger().log(e);
         }
-        System.out.println(finalCreateString);
         return finalCreateString;
-        }
     }
+}

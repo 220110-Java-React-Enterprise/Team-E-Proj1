@@ -15,13 +15,7 @@ public class ConnectionManager {
 
     }
 
-    //   public static ConnectionManager getConnectionManager(){
-    //       if(connectionManager == null) {
-    //           connectionManager = new ConnectionManager();
-    //       }
-    //      return connectionManager;
-    //   }
-
+    //takes in a string and creates a connection with it
     public static Connection getConnection(String connectionString){
         if(connection == null){
             connection = connect(connectionString);
@@ -29,20 +23,9 @@ public class ConnectionManager {
         return connection;
     }
 
+    //also returns the connection
     private static Connection connect(String connectionString){
         try{
-//            Properties props = new Properties();
-//            FileReader fr = new FileReader("src/main/resources/jdbc.properties");
-//            props.load(fr);
-//
-//            String connectionString = "jdbc:mariadb://" +
-//                    props.getProperty("hostname") + ":" +
-//                    props.getProperty("port") + "/" +
-//                    props.getProperty("dbname") + "?user=" +
-//                    props.getProperty("username") + "&password=" +
-//                    props.getProperty("password");
-//
-//            //Class.forName("org.mariadb.jdbc.Driver");
 
             connection = DriverManager.getConnection(connectionString);
 

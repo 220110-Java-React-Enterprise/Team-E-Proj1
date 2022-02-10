@@ -2,6 +2,8 @@ package Repository;
 
 public class GetType {
 
+    //overloaded functions that decide what type of data will be insterted
+    //into the SQL statement
     public String decideType(String a){
         return "Varchar(200)";
     }
@@ -18,8 +20,8 @@ public class GetType {
         return "Boolean";
     }
 
-
-
+    // overloaded function that determines what kind of data
+    // will be inserted into SQL statements
     public String decideJDBCType(String a){
         return "setString";
     }
